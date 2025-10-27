@@ -19,7 +19,6 @@ async function main() {
       throw new Error("Set PRIVATE_KEY_DEPLOY .env");
   }
 
-
   //check all env variables
   if (!process.env.MARKETPLACE_TREASURY)
     throw new Error("Set MARKETPLACE_TREASURY in .env");
@@ -28,7 +27,6 @@ async function main() {
   if (!process.env.FEE_MARKETPLACE_BPS)
     throw new Error("Set FEE_MARKETPLACE_BPS in .env");
   if (!process.env.ROYALTY) throw new Error("Set ROYALTY in .env");
-  
 
   const MARKETPLACE_TREASURY = isProduction
     ? process.env.MARKETPLACE_TREASURY

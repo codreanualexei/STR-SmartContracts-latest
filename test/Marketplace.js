@@ -122,16 +122,15 @@ describe("BUY", function () {
     expect(owner).to.equal(await MarketplaceInstance.getAddress());
   });
 
-  it("STR Buyer list cannot dublicate the listing domain on marketplace (cannot list if the domain is listed already)", async function () {
+  it("STR Buyer cannot dublicate the listing domain on marketplace (cannot list if the domain is listed already)", async function () {
     //List token on marketplace second time
-   await expect(
-    MarketplaceInstance.connect(buyer1).listToken(
-      await StrDomainsNFTInstance.getAddress(),
-      1,
-      ethers.parseEther("0.1")
-    )
-  ).to.be.revertedWith("not owner");
-    
+    await expect(
+      MarketplaceInstance.connect(buyer1).listToken(
+        await StrDomainsNFTInstance.getAddress(),
+        1,
+        ethers.parseEther("0.1"),
+      ),
+    ).to.be.revertedWith("not owner");
   });
 
   it("STR Buyer2 buy domain from marketplace, check marketplace treasury fees and seller balance", async function () {
@@ -217,7 +216,7 @@ describe("BUY", function () {
     expect(royaltyTreasuryFinalBalance).to.equal(expectedFinalBalance);
   });
 
-  it("Check fees for original creator of STR domain", async function () {
+  it("Check royalty fees for original creator of STR domain", async function () {
     //Check royalty treasury balance
     const royaltyOriginalCreatorBalance = await ethers.provider.getBalance(
       buyer1.address,

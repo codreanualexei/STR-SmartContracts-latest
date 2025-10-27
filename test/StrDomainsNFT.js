@@ -138,8 +138,7 @@ describe("Can deploy, mint, get Data, and setup SALES role", function () {
           await StrDomainsNFTInstance.SALES_ROLE(),
           secondAddress.address,
         )
-      : // Throw error if secondAddress does not have SALES_ROLE
-        console.log("The address does not have the SALES_ROLE");
+      : null;
     //make test failing
     expect(hasRole).to.be.false;
 

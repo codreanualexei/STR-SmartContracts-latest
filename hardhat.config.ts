@@ -12,12 +12,14 @@ const config: HardhatUserConfig = {
   networks: {
     amoy: {
       url: process.env.AMOY_RPC_URL || "",
-      accounts: process.env.MNEMONIC ? {
-        mnemonic: process.env.MNEMONIC,
-        initialIndex: 0,
-        count: 10,
-        path: "m/44'/60'/0'/0",
-      } : [],
+      accounts: process.env.MNEMONIC
+        ? {
+            mnemonic: process.env.MNEMONIC,
+            initialIndex: 0,
+            count: 10,
+            path: "m/44'/60'/0'/0",
+          }
+        : [],
       chainId: 80002,
     },
     polygon: {
