@@ -84,7 +84,6 @@ async function main() {
   const hasRole = await registry.hasRole(SALES_ROLE, marketplaceAddr);
   if (!hasRole) throw new Error("Marketplace should have SALES_ROLE");
 
-
   console.log("\nDONE ✅ below you can find all the setup data");
   console.log("===============================\n");
 
