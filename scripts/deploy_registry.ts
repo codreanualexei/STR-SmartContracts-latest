@@ -76,6 +76,15 @@ async function main() {
   await MarketplaceInstance.waitForDeployment();
   const marketplaceAddr = await MarketplaceInstance.getAddress();
 
+  const SALES_ROLE = ethers.id("SALES_ROLE");
+
+  const tx = await registry.grantRole(SALES_ROLE, marketplaceAddr);
+  await tx.wait();
+
+  const hasRole = await registry.hasRole(SALES_ROLE, marketplaceAddr);
+  if (!hasRole) throw new Error("Marketplace should have SALES_ROLE");
+
+
   console.log("\nDONE ✅ below you can find all the setup data");
   console.log("===============================\n");
 
