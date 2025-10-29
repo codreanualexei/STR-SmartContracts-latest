@@ -25,6 +25,7 @@ ERC721 NFT contract with EIP-2981 royalty support, access control, and per-token
 - `treasury`: Treasury address for royalty collection
 - `splitterFactory`: Factory for creating royalty splitters
 - `_domainToTokenId`: Mapping from domain names to token IDs
+- `_tokenIdToDomain`: Reverse mapping from token IDs to domain names
 
 ### Functions
 
@@ -117,6 +118,18 @@ function getTokenIdByDomain(string memory domainName) external view returns (uin
 **Returns**:
 - `uint256`: Token ID associated with the domain name
 
+#### getDomainByTokenId
+```solidity
+function getDomainByTokenId(uint256 tokenId) external view returns (string memory)
+```
+**Description**: Returns the domain name associated with a specific token ID.
+
+**Parameters**:
+- `tokenId` (uint256): Token ID to look up
+
+**Returns**:
+- `string memory`: Domain name associated with the token ID
+
 #### creatorOf
 ```solidity
 function creatorOf(uint256 tokenId) external view returns (address)
@@ -185,6 +198,22 @@ function recordSale(uint256 tokenId, uint256 price, address buyer) external only
 
 **Events Emitted**:
 - `SaleRecorded`
+
+#### burn
+```solidity
+function burn(uint256 tokenId) public override onlyRole(DEFAULT_ADMIN_ROLE)
+```
+**Description**: Burns a token and cleans up associated domain mappings. Only contract admin can burn tokens.
+
+**Parameters**:
+- `tokenId` (uint256): Token ID to burn
+
+**Returns**: None
+
+**Access Control**: Only `DEFAULT_ADMIN_ROLE`
+
+**Events Emitted**:
+- `Transfer` (from ERC721)
 
 ---
 
@@ -539,7 +568,7 @@ function createSplitter(address creator, address treasury, uint16 creatorBps, ui
 ## Access Control
 
 ### StrDomainsNFT Roles
-- `DEFAULT_ADMIN_ROLE`: Can update treasury and splitter factory
+- `DEFAULT_ADMIN_ROLE`: Can update treasury and splitter factory, burn tokens
 - `MINTER_ROLE`: Can mint new tokens
 - `SALES_ROLE`: Can record sales
 
@@ -570,3 +599,5 @@ function createSplitter(address creator, address treasury, uint16 creatorBps, ui
 2. The Marketplace contract handles royalty payments through the EIP-2981 standard
 3. All contracts use OpenZeppelin libraries for security and standardization
 4. The system supports both ETH and ERC20 token payments for royalties
+5. Domain names are unique and have bidirectional mapping with token IDs
+6. Domain mappings are automatically cleaned up when tokens are burned

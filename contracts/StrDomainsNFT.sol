@@ -37,6 +37,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     mapping(uint256 => uint256) private _lastSalePrice;
     mapping(uint256 => uint64)  private _lastSaleAt;
     mapping(string => uint256) private _domainToTokenId;
+    mapping(uint256 => string) private _tokenIdToDomain;
 
     event TreasuryUpdated(address indexed newTreasury);
     event DefaultRoyaltyUpdated(address indexed receiver, uint96 bps);
@@ -83,6 +84,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         _creator[tokenId]  = to;
         _mintedAt[tokenId] = uint64(block.timestamp);
         _domainToTokenId[domainName] = tokenId;
+        _tokenIdToDomain[tokenId] = domainName;
 
         address splitter = splitterFactory.createSplitter(
             to,
@@ -122,6 +124,13 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         return tokenId;
     }
 
+    function getDomainByTokenId(uint256 tokenId) external view returns (string memory) {
+        _requireOwned(tokenId);
+        string memory domainName = _tokenIdToDomain[tokenId];
+        require(bytes(domainName).length > 0, "domain not found");
+        return domainName;
+    }
+
     function creatorOf(uint256 tokenId) external view returns (address) {
         _requireOwned(tokenId);
         return _creator[tokenId];
@@ -136,7 +145,8 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         _requireOwned(tokenId);
         return (_lastSalePrice[tokenId], _lastSaleAt[tokenId]);
     }
-
+    /// smartcontract.getTokenData.byId()
+    /// smartcontract.getTokenData.name()
     function getTokenData(uint256 tokenId)
         external
         view
@@ -156,6 +166,17 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         _lastSalePrice[tokenId] = price;
         _lastSaleAt[tokenId]    = uint64(block.timestamp);
         emit SaleRecorded(tokenId, price, buyer, _lastSaleAt[tokenId]);
+    }
+
+    // ---------- BURN OVERRIDE ----------
+    function burn(uint256 tokenId) public override onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Clean up domain mappings when token is burned
+        string memory domainName = _tokenIdToDomain[tokenId];
+        if (bytes(domainName).length > 0) {
+            delete _domainToTokenId[domainName];
+            delete _tokenIdToDomain[tokenId];
+        }
+        super.burn(tokenId);
     }
 
     // ---------- OVERRIDES ----------
