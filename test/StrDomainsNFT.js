@@ -50,6 +50,7 @@ describe("Can deploy, mint, get Data, and setup SALES role", function () {
     const tx = await StrDomainsNFTInstance.connect(owner).mint(
       owner.address,
       "example.str",
+      "exampleDomainName.str",
     );
     const txData = await tx.wait();
     mintingBlock = await ethers.provider.getBlock(txData.blockNumber);
@@ -57,25 +58,28 @@ describe("Can deploy, mint, get Data, and setup SALES role", function () {
     expect(await StrDomainsNFTInstance.ownerOf(1)).to.equal(owner.address);
   });
 
-  it("should get right token data", async function () {
-    const tx = await StrDomainsNFTInstance.connect(owner).mint(
-      owner.address,
-      "example.str",
-    );
-    await tx.wait();
+  it("should get right token metadata", async function () {
     const data = await StrDomainsNFTInstance.getTokenData(1);
     const uri = data[2];
     expect(uri).to.equal("example.str");
   });
 
-  it("should get right mint timestamp", async function () {
+  it("should get right token domain name", async function () {
     const tx = await StrDomainsNFTInstance.connect(owner).mint(
       owner.address,
       "example.str",
+      "exampleDomainName2.str",
     );
     await tx.wait();
+    const data = await StrDomainsNFTInstance.getTokenIdByDomain(
+      "exampleDomainName2.str",
+    );
+    const uri = data;
+    expect(Number(data)).to.equal(2);
+  });
+
+  it("should get right mint timestamp", async function () {
     const mintedAt = await StrDomainsNFTInstance.mintedAt(1);
-    //console.log("mintedAt:", mintedAt, "block:", mintingBlock.timestamp);
     expect(mintedAt).to.equal(mintingBlock.timestamp); //compare timestamp from SC with block timestamp got at minting time
   });
 
@@ -194,6 +198,7 @@ describe("Transfer", function () {
     const tx = await StrDomainsNFTInstance.connect(owner).mint(
       owner.address,
       "example.str",
+      "exampleDomainName2.str",
     );
     await tx.wait();
     expect(await StrDomainsNFTInstance.ownerOf(1)).to.equal(owner.address);

@@ -36,6 +36,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     mapping(uint256 => uint64)  private _mintedAt;
     mapping(uint256 => uint256) private _lastSalePrice;
     mapping(uint256 => uint64)  private _lastSaleAt;
+    mapping(string => uint256) private _domainToTokenId;
 
     event TreasuryUpdated(address indexed newTreasury);
     event DefaultRoyaltyUpdated(address indexed receiver, uint96 bps);
@@ -66,12 +67,14 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     }
 
     // ---------- MINT ----------
-    function mint(address to, string memory uri)
+    function mint(address to, string memory uri, string memory domainName)
         external
         onlyRole(MINTER_ROLE)
         returns (uint256 tokenId)
     {
         require(to != address(0), "to=0");
+        require(bytes(domainName).length > 0, "domain empty");
+        require(_domainToTokenId[domainName] == 0, "domain exists");
 
         tokenId = ++_lastId;
         _safeMint(to, tokenId);
@@ -79,6 +82,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
 
         _creator[tokenId]  = to;
         _mintedAt[tokenId] = uint64(block.timestamp);
+        _domainToTokenId[domainName] = tokenId;
 
         address splitter = splitterFactory.createSplitter(
             to,
@@ -110,6 +114,12 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     // ---------- GETTERS ----------
     function getLastId() external view returns (uint256) {
         return _lastId;
+    }
+
+    function getTokenIdByDomain(string memory domainName) external view returns (uint256) {
+        uint256 tokenId = _domainToTokenId[domainName];
+        require(tokenId != 0, "domain not found");
+        return tokenId;
     }
 
     function creatorOf(uint256 tokenId) external view returns (address) {

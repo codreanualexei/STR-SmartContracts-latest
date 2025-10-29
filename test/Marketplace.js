@@ -86,6 +86,7 @@ describe("BUY", function () {
     const tx = await StrDomainsNFTInstance.connect(minterAccount).mint(
       buyer1.address,
       "example.str",
+      "exampleDomainName.str",
     );
     await tx.wait();
     expect(await StrDomainsNFTInstance.ownerOf(1)).to.equal(buyer1.address);

@@ -24,6 +24,7 @@ ERC721 NFT contract with EIP-2981 royalty support, access control, and per-token
 - `_lastId`: Last minted token ID
 - `treasury`: Treasury address for royalty collection
 - `splitterFactory`: Factory for creating royalty splitters
+- `_domainToTokenId`: Mapping from domain names to token IDs
 
 ### Functions
 
@@ -48,13 +49,14 @@ constructor(string memory name_, string memory symbol_, address treasury_, addre
 
 #### mint
 ```solidity
-function mint(address to, string memory uri) external onlyRole(MINTER_ROLE) returns (uint256 tokenId)
+function mint(address to, string memory uri, string memory domainName) external onlyRole(MINTER_ROLE) returns (uint256 tokenId)
 ```
-**Description**: Mints a new NFT token to the specified address with the given URI.
+**Description**: Mints a new NFT token to the specified address with the given URI and domain name.
 
 **Parameters**:
 - `to` (address): Address to mint the token to
 - `uri` (string): Token URI metadata
+- `domainName` (string): Domain name associated with the token
 
 **Returns**:
 - `tokenId` (uint256): The ID of the newly minted token
@@ -102,6 +104,18 @@ function getLastId() external view returns (uint256)
 
 **Returns**:
 - `uint256`: The ID of the last minted token
+
+#### getTokenIdByDomain
+```solidity
+function getTokenIdByDomain(string memory domainName) external view returns (uint256)
+```
+**Description**: Returns the token ID associated with a specific domain name.
+
+**Parameters**:
+- `domainName` (string): Domain name to look up
+
+**Returns**:
+- `uint256`: Token ID associated with the domain name
 
 #### creatorOf
 ```solidity
