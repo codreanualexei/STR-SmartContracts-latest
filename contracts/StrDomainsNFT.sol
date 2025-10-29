@@ -108,6 +108,10 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     }
 
     // ---------- GETTERS ----------
+    function getLastId() external view returns (uint256) {
+        return _lastId;
+    }
+
     function creatorOf(uint256 tokenId) external view returns (address) {
         _requireOwned(tokenId);
         return _creator[tokenId];
