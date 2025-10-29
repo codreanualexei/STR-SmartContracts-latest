@@ -92,6 +92,17 @@ function setSplitterFactory(address newFactory) external onlyRole(DEFAULT_ADMIN_
 **Events Emitted**:
 - `SplitterFactoryUpdated`
 
+#### getLastId
+```solidity
+function getLastId() external view returns (uint256)
+```
+**Description**: Returns the ID of the last minted token.
+
+**Parameters**: None
+
+**Returns**:
+- `uint256`: The ID of the last minted token
+
 #### creatorOf
 ```solidity
 function creatorOf(uint256 tokenId) external view returns (address)
