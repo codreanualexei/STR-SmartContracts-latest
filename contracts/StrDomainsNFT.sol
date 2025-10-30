@@ -118,17 +118,19 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         return _lastId;
     }
 
-    function getTokenIdByDomain(string memory domainName) external view returns (uint256) {
+    function getTokenDataByDomain(string memory domainName)
+        external
+        view
+        returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt)
+    {
         uint256 tokenId = _domainToTokenId[domainName];
         require(tokenId != 0, "domain not found");
-        return tokenId;
-    }
-
-    function getDomainByTokenId(uint256 tokenId) external view returns (string memory) {
         _requireOwned(tokenId);
-        string memory domainName = _tokenIdToDomain[tokenId];
-        require(bytes(domainName).length > 0, "domain not found");
-        return domainName;
+        creator   = _creator[tokenId];
+        mintedAt_ = _mintedAt[tokenId];
+        uri       = tokenURI(tokenId);
+        lastPrice = _lastSalePrice[tokenId];
+        lastAt    = _lastSaleAt[tokenId];
     }
 
     function creatorOf(uint256 tokenId) external view returns (address) {
@@ -150,14 +152,15 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     function getTokenData(uint256 tokenId)
         external
         view
-        returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt)
+        returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt, string memory domainName)
     {
         _requireOwned(tokenId);
-        creator   = _creator[tokenId];
-        mintedAt_ = _mintedAt[tokenId];
-        uri       = tokenURI(tokenId);
-        lastPrice = _lastSalePrice[tokenId];
-        lastAt    = _lastSaleAt[tokenId];
+        creator     = _creator[tokenId];
+        mintedAt_   = _mintedAt[tokenId];
+        uri         = tokenURI(tokenId);
+        lastPrice   = _lastSalePrice[tokenId];
+        lastAt      = _lastSaleAt[tokenId];
+        domainName  = _tokenIdToDomain[tokenId];
     }
 
     // ---------- SALES RECORDING ----------
