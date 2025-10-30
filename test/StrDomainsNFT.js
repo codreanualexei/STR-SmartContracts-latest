@@ -102,6 +102,11 @@ describe("Can deploy, mint, get Data, and setup SALES role", function () {
     expect(Number(data[5])).to.equal(3); //tokenId
   });
 
+  it("Last minted tokenId should be 3", async function () {
+    const lastTokenId = await StrDomainsNFTInstance.getLastId();
+    expect(lastTokenId).to.equal(3);
+  });
+
   it("should get right mint timestamp", async function () {
     const mintedAt = await StrDomainsNFTInstance.mintedAt(1);
     expect(mintedAt).to.equal(mintingBlock.timestamp); //compare timestamp from SC with block timestamp got at minting time
