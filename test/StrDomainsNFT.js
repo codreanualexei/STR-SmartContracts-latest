@@ -67,15 +67,39 @@ describe("Can deploy, mint, get Data, and setup SALES role", function () {
   it("should get right token domain name", async function () {
     const tx = await StrDomainsNFTInstance.connect(owner).mint(
       owner.address,
-      "example.str",
+      "test.str",
       "exampleDomainName2.str",
     );
     await tx.wait();
-    const data = await StrDomainsNFTInstance.getTokenIdByDomain(
+    const data = await StrDomainsNFTInstance.getTokenDataByDomain(
       "exampleDomainName2.str",
     );
-    const uri = data;
-    expect(Number(data)).to.equal(2);
+    const uri = data[2];
+    expect(uri).to.equal("test.str");
+  });
+
+  it("should burn token", async function () {
+    const tx = await StrDomainsNFTInstance.connect(owner).burn(2);
+    await tx.wait();
+    await expect(
+      StrDomainsNFTInstance.getTokenDataByDomain("exampleDomainName2.str"),
+    ).to.be.revertedWith("domain not found");
+  });
+
+  it("should remint burned domain", async function () {
+    const tx = await StrDomainsNFTInstance.connect(owner).mint(
+      owner.address,
+      "reminted.str",
+      "exampleDomainName2.str",
+    );
+    await tx.wait();
+    const data = await StrDomainsNFTInstance.getTokenDataByDomain(
+      "exampleDomainName2.str",
+    );
+    const uri = data[2];
+    expect(uri).to.equal("reminted.str");
+    expect(data[0]).to.equal(owner.address); //creator
+    expect(Number(data[5])).to.equal(3); //tokenId
   });
 
   it("should get right mint timestamp", async function () {

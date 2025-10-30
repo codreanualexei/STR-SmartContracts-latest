@@ -13,7 +13,7 @@ This document provides comprehensive documentation for four smart contracts in t
 ## 1. StrDomainsNFT.sol
 
 ### Contract Description
-ERC721 NFT contract with EIP-2981 royalty support, access control, and per-token royalty splitters. Each token has a creator, minting timestamp, and sale history tracking.
+ERC721 NFT contract with EIP-2981 royalty support, access control, and per-token royalty splitters. Each token has a creator, minting timestamp, sale history tracking, and a unique domain name with bidirectional mappings (domain ↔ tokenId).
 
 ### State Variables
 - `MINTER_ROLE`: Role for minting new tokens
@@ -106,29 +106,22 @@ function getLastId() external view returns (uint256)
 **Returns**:
 - `uint256`: The ID of the last minted token
 
-#### getTokenIdByDomain
+#### getTokenDataByDomain
 ```solidity
-function getTokenIdByDomain(string memory domainName) external view returns (uint256)
+function getTokenDataByDomain(string memory domainName) external view returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt, uint256 tokenId)
 ```
-**Description**: Returns the token ID associated with a specific domain name.
+**Description**: Returns comprehensive token data for a given domain name: creator, minting info, URI, sale history, and token ID.
 
 **Parameters**:
 - `domainName` (string): Domain name to look up
 
 **Returns**:
-- `uint256`: Token ID associated with the domain name
-
-#### getDomainByTokenId
-```solidity
-function getDomainByTokenId(uint256 tokenId) external view returns (string memory)
-```
-**Description**: Returns the domain name associated with a specific token ID.
-
-**Parameters**:
-- `tokenId` (uint256): Token ID to look up
-
-**Returns**:
-- `string memory`: Domain name associated with the token ID
+- `creator` (address): Token creator address
+- `mintedAt_` (uint64): Minting timestamp
+- `uri` (string): Token URI
+- `lastPrice` (uint256): Last sale price
+- `lastAt` (uint64): Last sale timestamp
+- `tokenId` (uint256): Token ID associated with the domain name
 
 #### creatorOf
 ```solidity
@@ -169,9 +162,9 @@ function lastSaleOf(uint256 tokenId) external view returns (uint256 price, uint6
 
 #### getTokenData
 ```solidity
-function getTokenData(uint256 tokenId) external view returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt)
+function getTokenData(uint256 tokenId) external view returns (address creator, uint64 mintedAt_, string memory uri, uint256 lastPrice, uint64 lastAt, string memory domainName)
 ```
-**Description**: Returns comprehensive token data including creator, minting info, URI, and sale history.
+**Description**: Returns comprehensive token data including creator, minting info, URI, sale history, and the associated domain name.
 
 **Parameters**:
 - `tokenId` (uint256): Token ID to query
@@ -182,6 +175,7 @@ function getTokenData(uint256 tokenId) external view returns (address creator, u
 - `uri` (string): Token URI
 - `lastPrice` (uint256): Last sale price
 - `lastAt` (uint64): Last sale timestamp
+- `domainName` (string): Domain associated with the token
 
 #### recordSale
 ```solidity
