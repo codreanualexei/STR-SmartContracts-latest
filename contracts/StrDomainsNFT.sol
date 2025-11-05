@@ -41,7 +41,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
 
     event TreasuryUpdated(address indexed newTreasury);
     event DefaultRoyaltyUpdated(address indexed receiver, uint96 bps);
-    event Minted(uint256 indexed tokenId, address indexed to, address indexed creator, string tokenURI);
+    event Minted(uint256 indexed tokenId, address indexed to, address indexed creator, string tokenURI, string domain);
     event SaleRecorded(uint256 indexed tokenId, uint256 price, address indexed buyer, uint64 at);
     event SplitterFactoryUpdated(address indexed newFactory);
     event TokenSplitterSet(uint256 indexed tokenId, address indexed splitter, uint96 royaltyBps);
@@ -95,7 +95,7 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         _setTokenRoyalty(tokenId, splitter, DEFAULT_ROYALTY_BPS);
         emit TokenSplitterSet(tokenId, splitter, DEFAULT_ROYALTY_BPS);
 
-        emit Minted(tokenId, to, to, uri);
+        emit Minted(tokenId, to, to, uri, domainName);
     }
 
     // ---------- ROYALTY ADMIN ----------
