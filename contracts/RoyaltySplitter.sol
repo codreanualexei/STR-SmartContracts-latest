@@ -10,15 +10,15 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title RoyaltySplitter
- * @notice Делит входящие средства между creator и treasury по bps. Pull-платежи.
- * @dev Инициализируется один раз через init(). Админские действия доступны держателю DEFAULT_ADMIN_ROLE.
+ * @notice Splits incoming funds between the creator and the treasury using basis points. Pull-withdraw model.
+ * @dev Initialized once via init(). Administrative actions are gated by DEFAULT_ADMIN_ROLE.
  */
 
 
 contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // Получатели и доли (в bps, 10000 = 100%)
+    // Recipients and shares (basis points, 10000 = 100%)
     address public creator;
     address public treasury;
     uint16 public creatorBps;
@@ -26,14 +26,14 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
 
     bool private _initialized;
 
-    // Накопленные балансы для pull-withdraw
-    mapping(address => uint256) public ethBalance;                        // получатель => сумма (MATIC)
-    mapping(address => mapping(address => uint256)) public erc20Balance;  // token => получатель => сумма
+    // Accumulated balances available for pull-withdraw
+    mapping(address => uint256) public ethBalance;                        // recipient => amount (native token)
+    mapping(address => mapping(address => uint256)) public erc20Balance;  // token => recipient => amount
 
     address[] private _trackedTokens;
     mapping(address => bool) private _isTrackedToken;
 
-    // События
+    // Events
     event Initialized(address indexed creator, address indexed treasury, uint16 creatorBps, uint16 treasuryBps);
     event SplitsUpdated(uint16 creatorBps, uint16 treasuryBps);
     event Received(address indexed from, uint256 amount);
@@ -49,8 +49,8 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Однократная инициализация. Устанавливает получателей и доли.
-     * @dev Выдаёт DEFAULT_ADMIN_ROLE msg.sender'у.
+     * @notice One-time initialization. Sets recipients and their respective shares.
+     * @dev Grants DEFAULT_ADMIN_ROLE to msg.sender.
      */
     function init(
         address _creator,
@@ -73,7 +73,7 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Обновить пропорции распределения (в bps). Только админ.
+     * @notice Update the split proportions (in basis points). Admin-only.
      */
     function setSplits(uint16 _creatorBps, uint16 _treasuryBps) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_initialized, "not init");
@@ -84,7 +84,7 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Приём нативного токена (MATIC). Делит и учитывает на балансах получателей.
+     * @notice Receives native tokens and proportions them to recipient balances.
      */
     receive() external payable {
         _collectNative(msg.value);
@@ -95,7 +95,7 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Приём ERC-20. Делит и учитывает на балансах получателей.
+     * @notice Receives ERC-20 tokens and proportions them to recipient balances.
      */
     function depositToken(address token, uint256 amount) external nonReentrant {
         require(_initialized, "not init");
@@ -115,8 +115,8 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Обновляет адрес создателя и переносит накопленные средства.
-     *         Может вызвать текущий создатель либо админ (фабрика/DAO).
+     * @notice Updates the creator address and migrates any accrued balances.
+     *         Callable only by the current creator.
      */
     function updateCreator(address newCreator) external {
         require(_initialized, "not init");
@@ -134,8 +134,8 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Обновляет адрес казначейства и переносит накопленные средства.
-     *         Доступно текущему казначейству или админам (фабрика/DAO).
+     * @notice Updates the treasury address and migrates any accrued balances.
+     *         Callable by the current treasury address or contract admins.
      */
     function updateTreasury(address newTreasury) external {
         require(_initialized, "not init");
@@ -153,7 +153,7 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Выводит накопленный MATIC для msg.sender.
+     * @notice Withdraw accumulated native tokens for msg.sender.
      */
     function withdraw() external nonReentrant {
         uint256 bal = ethBalance[msg.sender];
@@ -165,7 +165,7 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Выводит накопленный ERC-20 для msg.sender.
+     * @notice Withdraw accumulated ERC-20 tokens for msg.sender.
      */
     function withdrawToken(address token) external nonReentrant {
         uint256 bal = erc20Balance[token][msg.sender];

@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface IRoyaltySplitterFactory {
     function createSplitter(
@@ -15,18 +18,23 @@ interface IRoyaltySplitterFactory {
     ) external returns (address splitter);
 }
 
-/// ERC721 с EIP-2981, ролями и пер-токенными сплиттерами (2% создателю, 3% казне).
-contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessControl {
-    // Роли
+interface IRoyaltySplitter {
+    function depositToken(address token, uint256 amount) external;
+}
+
+/// ERC721 with EIP-2981 support, roles, and per-token royalty splitters (2% creator, 3% treasury).
+contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessControl, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    // Roles
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant SALES_ROLE  = keccak256("SALES_ROLE");
 
-    // Роялти
-    uint96 public constant DEFAULT_ROYALTY_BPS   = 500;  // 5% от цены
-    uint16 public constant CREATOR_SHARE_IN_ROY  = 4000; // 40% от роялти (2% от цены)
-    uint16 public constant TREASURY_SHARE_IN_ROY = 6000; // 60% от роялти (3% от цены)
+    // Royalty configuration
+    uint96 public constant DEFAULT_ROYALTY_BPS   = 500;  // 5% of sale price
+    uint16 public constant CREATOR_SHARE_IN_ROY  = 4000; // 40% of royalty (2% of sale price)
+    uint16 public constant TREASURY_SHARE_IN_ROY = 6000; // 60% of royalty (3% of sale price)
 
-    //Token id = can modify  X+_lastId 
+    // Tracks the last minted token id
     uint256 private _lastId;
 
     address public treasury;
@@ -45,6 +53,14 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
     event SaleRecorded(uint256 indexed tokenId, uint256 price, address indexed buyer, uint64 at);
     event SplitterFactoryUpdated(address indexed newFactory);
     event TokenSplitterSet(uint256 indexed tokenId, address indexed splitter, uint96 royaltyBps);
+    event ERC20SaleSettled(
+        uint256 indexed tokenId,
+        address indexed paymentToken,
+        uint256 price,
+        address indexed buyer,
+        address seller,
+        uint256 royaltyAmount
+    );
 
     constructor(
         string memory name_,
@@ -171,6 +187,63 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         _lastSalePrice[tokenId] = price;
         _lastSaleAt[tokenId]    = uint64(block.timestamp);
         emit SaleRecorded(tokenId, price, buyer, _lastSaleAt[tokenId]);
+    }
+
+    function settleSaleERC20(
+        uint256 tokenId,
+        address paymentToken,
+        uint256 price,
+        address seller,
+        address buyer
+    ) external onlyRole(SALES_ROLE) nonReentrant {
+        _requireOwned(tokenId);
+        require(paymentToken != address(0), "token=0");
+        require(price > 0, "price=0");
+        require(buyer != address(0), "buyer=0");
+
+        address currentOwner = ownerOf(tokenId);
+        require(currentOwner == seller, "seller!=owner");
+        require(buyer != seller, "buyer=seller");
+
+        IERC20 token = IERC20(paymentToken);
+        token.safeTransferFrom(buyer, address(this), price);
+
+        (address royaltyReceiver, uint256 royaltyAmount) = royaltyInfo(tokenId, price);
+        uint256 sellerProceeds = price - royaltyAmount;
+
+        if (royaltyAmount > 0 && royaltyReceiver != address(0)) {
+            token.safeIncreaseAllowance(royaltyReceiver, royaltyAmount);
+            bool deposited = _tryDepositToken(royaltyReceiver, paymentToken, royaltyAmount);
+            token.safeApprove(royaltyReceiver, 0);
+            if (!deposited) {
+                token.safeTransfer(royaltyReceiver, royaltyAmount);
+            }
+        }
+
+        if (sellerProceeds > 0) {
+            token.safeTransfer(seller, sellerProceeds);
+        }
+
+        _safeTransfer(seller, buyer, tokenId);
+
+        uint64 nowTs = uint64(block.timestamp);
+        _lastSalePrice[tokenId] = price;
+        _lastSaleAt[tokenId] = nowTs;
+
+        emit SaleRecorded(tokenId, price, buyer, nowTs);
+        emit ERC20SaleSettled(tokenId, paymentToken, price, buyer, seller, royaltyAmount);
+    }
+
+    function _tryDepositToken(address splitter, address token, uint256 amount) private returns (bool) {
+        if (splitter == address(0) || splitter.code.length == 0) {
+            return false;
+        }
+
+        try IRoyaltySplitter(splitter).depositToken(token, amount) {
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     // ---------- BURN OVERRIDE ----------

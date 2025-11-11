@@ -11,15 +11,15 @@ interface IRoyaltySplitter {
 
 /**
  * @title RoyaltySplitterFactory
- * @notice Создаёт минимальные клоны RoyaltySplitter и вызывает init().
- *         Используется NFT-контрактом при минте для установки per-token роялти-получателя.
+ * @notice Deploys minimal proxy clones of RoyaltySplitter and runs init().
+ *         Used by the NFT contract at mint time to configure per-token royalty recipients.
  */
 contract RoyaltySplitterFactory is AccessControl {
     using Clones for address;
 
     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;
 
-    address public immutable implementation; // адрес заранее задеплоенного RoyaltySplitter (реализация)
+    address public immutable implementation; // address of the pre-deployed RoyaltySplitter implementation
 
     event SplitterCreated(
         address indexed splitter,
@@ -36,11 +36,11 @@ contract RoyaltySplitterFactory is AccessControl {
     }
 
     /**
-     * @notice Создаёт клон сплиттера и инициализирует его.
-     * @param creator адрес создателя NFT
-     * @param treasury адрес казначейства (платформы)
-     * @param creatorBps доля создателя (из 10000)
-     * @param treasuryBps доля казны (из 10000). Сумма должна быть 10000.
+     * @notice Creates a splitter clone and initializes it.
+     * @param creator address of the NFT creator
+     * @param treasury address of the platform treasury
+     * @param creatorBps creator share in basis points (out of 10000)
+     * @param treasuryBps treasury share in basis points (out of 10000). Sum must equal 10000.
      */
     function createSplitter(
         address creator,
@@ -51,15 +51,15 @@ contract RoyaltySplitterFactory is AccessControl {
         require(creator != address(0) && treasury != address(0), "zero addr");
         require(uint256(creatorBps) + uint256(treasuryBps) == 10000, "split!=10000");
 
-        splitter = implementation.clone(); // минимальный прокси EIP-1167
+        splitter = implementation.clone(); // minimal proxy (EIP-1167)
         IRoyaltySplitter(splitter).init(creator, treasury, creatorBps, treasuryBps);
 
         emit SplitterCreated(splitter, creator, treasury, creatorBps, treasuryBps);
     }
 
     /**
-     * @notice Обновляет адрес казначейства на уже созданном сплиттере.
-     *         Доступно только админам фабрики.
+     * @notice Updates the treasury address on an existing splitter.
+     *         Callable only by factory admins.
      */
     function updateSplitterTreasury(address splitter, address newTreasury) external onlyRole(ADMIN_ROLE) {
         require(splitter != address(0), "splitter=0");
