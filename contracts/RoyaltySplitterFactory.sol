@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 interface IRoyaltySplitter {
     function init(address creator, address treasury, uint16 creatorBps, uint16 treasuryBps) external;
+    function updateTreasury(address newTreasury) external;
 }
 
 /**
@@ -55,4 +56,14 @@ contract RoyaltySplitterFactory is AccessControl {
 
         emit SplitterCreated(splitter, creator, treasury, creatorBps, treasuryBps);
     }
+
+    /**
+     * @notice Обновляет адрес казначейства на уже созданном сплиттере.
+     *         Доступно только админам фабрики.
+     */
+    function updateSplitterTreasury(address splitter, address newTreasury) external onlyRole(ADMIN_ROLE) {
+        require(splitter != address(0), "splitter=0");
+        IRoyaltySplitter(splitter).updateTreasury(newTreasury);
+    }
+
 }

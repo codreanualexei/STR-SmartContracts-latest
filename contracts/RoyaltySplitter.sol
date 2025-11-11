@@ -30,6 +30,9 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     mapping(address => uint256) public ethBalance;                        // получатель => сумма (MATIC)
     mapping(address => mapping(address => uint256)) public erc20Balance;  // token => получатель => сумма
 
+    address[] private _trackedTokens;
+    mapping(address => bool) private _isTrackedToken;
+
     // События
     event Initialized(address indexed creator, address indexed treasury, uint16 creatorBps, uint16 treasuryBps);
     event SplitsUpdated(uint16 creatorBps, uint16 treasuryBps);
@@ -37,6 +40,8 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     event TokenReceived(address indexed token, address indexed from, uint256 amount);
     event Withdraw(address indexed to, uint256 amount);
     event WithdrawToken(address indexed token, address indexed to, uint256 amount);
+    event CreatorUpdated(address indexed oldCreator, address indexed newCreator);
+    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
     modifier onlyOnce() {
         require(!_initialized, "already initialized");
@@ -82,13 +87,11 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
      * @notice Приём нативного токена (MATIC). Делит и учитывает на балансах получателей.
      */
     receive() external payable {
-        require(_initialized, "not init");
-        if (msg.value == 0) return;
-        uint256 toCreator = (msg.value * creatorBps) / 10000;
-        uint256 toTreasury = msg.value - toCreator;
-        ethBalance[creator] += toCreator;
-        ethBalance[treasury] += toTreasury;
-        emit Received(msg.sender, msg.value);
+        _collectNative(msg.value);
+    }
+
+    fallback() external payable {
+        _collectNative(msg.value);
     }
 
     /**
@@ -106,8 +109,47 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
 
         erc20Balance[token][creator] += toCreator;
         erc20Balance[token][treasury] += toTreasury;
+        _trackToken(token);
 
         emit TokenReceived(token, msg.sender, amount);
+    }
+
+    /**
+     * @notice Обновляет адрес создателя и переносит накопленные средства.
+     *         Может вызвать текущий создатель либо админ (фабрика/DAO).
+     */
+    function updateCreator(address newCreator) external {
+        require(_initialized, "not init");
+        require(newCreator != address(0), "creator=0");
+        require(msg.sender == creator, "only creator");
+
+        address oldCreator = creator;
+        require(oldCreator != newCreator, "same creator");
+
+        creator = newCreator;
+        _moveEthBalance(oldCreator, newCreator);
+        _moveTokenBalances(oldCreator, newCreator);
+
+        emit CreatorUpdated(oldCreator, newCreator);
+    }
+
+    /**
+     * @notice Обновляет адрес казначейства и переносит накопленные средства.
+     *         Доступно текущему казначейству или админам (фабрика/DAO).
+     */
+    function updateTreasury(address newTreasury) external {
+        require(_initialized, "not init");
+        require(newTreasury != address(0), "treasury=0");
+        require(msg.sender == treasury || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "unauthorized");
+
+        address oldTreasury = treasury;
+        require(oldTreasury != newTreasury, "same treasury");
+
+        treasury = newTreasury;
+        _moveEthBalance(oldTreasury, newTreasury);
+        _moveTokenBalances(oldTreasury, newTreasury);
+
+        emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
     /**
@@ -131,5 +173,42 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         erc20Balance[token][msg.sender] = 0;
         IERC20(token).safeTransfer(msg.sender, bal);
         emit WithdrawToken(token, msg.sender, bal);
+    }
+
+    function _collectNative(uint256 amount) private {
+        require(_initialized, "not init");
+        if (amount == 0) return;
+        uint256 toCreator = (amount * creatorBps) / 10000;
+        uint256 toTreasury = amount - toCreator;
+        ethBalance[creator] += toCreator;
+        ethBalance[treasury] += toTreasury;
+        emit Received(msg.sender, amount);
+    }
+
+    function _trackToken(address token) private {
+        if (!_isTrackedToken[token]) {
+            _isTrackedToken[token] = true;
+            _trackedTokens.push(token);
+        }
+    }
+
+    function _moveEthBalance(address from, address to) private {
+        uint256 bal = ethBalance[from];
+        if (bal > 0) {
+            ethBalance[from] = 0;
+            ethBalance[to] += bal;
+        }
+    }
+
+    function _moveTokenBalances(address from, address to) private {
+        uint256 len = _trackedTokens.length;
+        for (uint256 i = 0; i < len; ++i) {
+            address token = _trackedTokens[i];
+            uint256 bal = erc20Balance[token][from];
+            if (bal > 0) {
+                erc20Balance[token][from] = 0;
+                erc20Balance[token][to] += bal;
+            }
+        }
     }
 }
