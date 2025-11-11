@@ -345,12 +345,16 @@ function onERC721Received(
             return true;
         }
 
-        token.safeIncreaseAllowance(royaltyReceiver, royaltyAmount);
+        uint256 currentAllowance = token.allowance(address(this), royaltyReceiver);
+        if (currentAllowance != 0) {
+            token.forceApprove(royaltyReceiver, 0);
+        }
+        token.forceApprove(royaltyReceiver, royaltyAmount);
         try IRoyaltySplitter(royaltyReceiver).depositToken(paymentToken, royaltyAmount) {
-            token.safeApprove(royaltyReceiver, 0);
+            token.forceApprove(royaltyReceiver, 0);
             return true;
         } catch {
-            token.safeApprove(royaltyReceiver, 0);
+            token.forceApprove(royaltyReceiver, 0);
             return false;
         }
     }

@@ -212,9 +212,13 @@ contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessContr
         uint256 sellerProceeds = price - royaltyAmount;
 
         if (royaltyAmount > 0 && royaltyReceiver != address(0)) {
-            token.safeIncreaseAllowance(royaltyReceiver, royaltyAmount);
+            uint256 currentAllowance = token.allowance(address(this), royaltyReceiver);
+            if (currentAllowance != 0) {
+                token.forceApprove(royaltyReceiver, 0);
+            }
+            token.forceApprove(royaltyReceiver, royaltyAmount);
             bool deposited = _tryDepositToken(royaltyReceiver, paymentToken, royaltyAmount);
-            token.safeApprove(royaltyReceiver, 0);
+            token.forceApprove(royaltyReceiver, 0);
             if (!deposited) {
                 token.safeTransfer(royaltyReceiver, royaltyAmount);
             }
