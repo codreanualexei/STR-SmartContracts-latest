@@ -22,7 +22,7 @@ interface IRoyaltySplitter {
     function depositToken(address token, uint256 amount) external;
 }
 
-/// ERC721 with EIP-2981 support, roles, and per-token royalty splitters (2% creator, 3% treasury).
+/// ERC721 with EIP-2981 support, roles, and token royalty splitters (2% creator, 3% treasury).
 contract StrDomainsNFT is ERC721URIStorage, ERC721Burnable, ERC2981, AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
     // Roles

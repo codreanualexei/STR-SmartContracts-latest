@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// Minimal interface for the StrDomainsNFT contract
 interface IStrDomainsNFT {
     function ownerOf(uint256 tokenId) external view returns (address);
     function safeTransferFrom(address from, address to, uint256 tokenId) external;
@@ -22,8 +21,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// Fixed-price marketplace with royalty payouts (EIP-2981 compatible).
-/// Supports native-token payments and ERC20 settlements. Marketplace fees accumulate and can be withdrawn via withdraw functions.
 contract Marketplace is AccessControl, ReentrancyGuard, IERC721Receiver {
     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;
     using SafeERC20 for IERC20;
@@ -100,7 +97,6 @@ contract Marketplace is AccessControl, ReentrancyGuard, IERC721Receiver {
         feeTreasury = t;
     }
 
-    /// Withdraw accumulated native-token marketplace fees to the fee treasury.
     function withdrawFees() external onlyRole(ADMIN_ROLE) nonReentrant {
         address recipient = feeTreasury;
         uint256 amount = accruedFees;

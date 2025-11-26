@@ -8,13 +8,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 
 
-/**
- * @title RoyaltySplitter
- * @notice Splits incoming funds between the creator and the treasury using basis points. Pull-withdraw model.
- * @dev Initialized once via init(). Administrative actions are gated by DEFAULT_ADMIN_ROLE.
- */
-
-
 contract RoyaltySplitter is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -48,10 +41,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         _;
     }
 
-    /**
-     * @notice One-time initialization. Sets recipients and their respective shares.
-     * @dev Grants DEFAULT_ADMIN_ROLE to msg.sender.
-     */
     function init(
         address _creator,
         address _treasury,
@@ -72,9 +61,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit Initialized(_creator, _treasury, _creatorBps, _treasuryBps);
     }
 
-    /**
-     * @notice Update the split proportions (in basis points). Admin-only.
-     */
     function setSplits(uint16 _creatorBps, uint16 _treasuryBps) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_initialized, "not init");
         require(_creatorBps + _treasuryBps == 10000, "split!=10000");
@@ -83,9 +69,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit SplitsUpdated(_creatorBps, _treasuryBps);
     }
 
-    /**
-     * @notice Receives native tokens and proportions them to recipient balances.
-     */
     receive() external payable {
         _collectNative(msg.value);
     }
@@ -94,9 +77,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         _collectNative(msg.value);
     }
 
-    /**
-     * @notice Receives ERC-20 tokens and proportions them to recipient balances.
-     */
     function depositToken(address token, uint256 amount) external nonReentrant {
         require(_initialized, "not init");
         require(token != address(0), "token=0");
@@ -114,10 +94,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit TokenReceived(token, msg.sender, amount);
     }
 
-    /**
-     * @notice Updates the creator address and migrates any accrued balances.
-     *         Callable only by the current creator.
-     */
     function updateCreator(address newCreator) external {
         require(_initialized, "not init");
         require(newCreator != address(0), "creator=0");
@@ -133,10 +109,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit CreatorUpdated(oldCreator, newCreator);
     }
 
-    /**
-     * @notice Updates the treasury address and migrates any accrued balances.
-     *         Callable by the current treasury address or contract admins.
-     */
     function updateTreasury(address newTreasury) external {
         require(_initialized, "not init");
         require(newTreasury != address(0), "treasury=0");
@@ -152,9 +124,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
-    /**
-     * @notice Withdraw accumulated native tokens for msg.sender.
-     */
     function withdraw() external nonReentrant {
         uint256 bal = ethBalance[msg.sender];
         require(bal > 0, "no funds");
@@ -164,9 +133,6 @@ contract RoyaltySplitter is AccessControl, ReentrancyGuard {
         emit Withdraw(msg.sender, bal);
     }
 
-    /**
-     * @notice Withdraw accumulated ERC-20 tokens for msg.sender.
-     */
     function withdrawToken(address token) external nonReentrant {
         uint256 bal = erc20Balance[token][msg.sender];
         require(bal > 0, "no funds");

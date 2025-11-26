@@ -9,11 +9,6 @@ interface IRoyaltySplitter {
     function updateTreasury(address newTreasury) external;
 }
 
-/**
- * @title RoyaltySplitterFactory
- * @notice Deploys minimal proxy clones of RoyaltySplitter and runs init().
- *         Used by the NFT contract at mint time to configure per-token royalty recipients.
- */
 contract RoyaltySplitterFactory is AccessControl {
     using Clones for address;
 
@@ -35,13 +30,6 @@ contract RoyaltySplitterFactory is AccessControl {
         _grantRole(ADMIN_ROLE, msg.sender);
     }
 
-    /**
-     * @notice Creates a splitter clone and initializes it.
-     * @param creator address of the NFT creator
-     * @param treasury address of the platform treasury
-     * @param creatorBps creator share in basis points (out of 10000)
-     * @param treasuryBps treasury share in basis points (out of 10000). Sum must equal 10000.
-     */
     function createSplitter(
         address creator,
         address treasury,
@@ -57,10 +45,6 @@ contract RoyaltySplitterFactory is AccessControl {
         emit SplitterCreated(splitter, creator, treasury, creatorBps, treasuryBps);
     }
 
-    /**
-     * @notice Updates the treasury address on an existing splitter.
-     *         Callable only by factory admins.
-     */
     function updateSplitterTreasury(address splitter, address newTreasury) external onlyRole(ADMIN_ROLE) {
         require(splitter != address(0), "splitter=0");
         IRoyaltySplitter(splitter).updateTreasury(newTreasury);
