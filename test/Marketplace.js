@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("BUY", function () {
+describe("Marketplace tests", function () {
   const feeMarketplaceBps = 250; //2.5%
   const feeRoyaltyBps = 500; //5%
 

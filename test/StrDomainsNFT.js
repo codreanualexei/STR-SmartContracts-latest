@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Can deploy, mint, get Data, and setup SALES role", function () {
+describe("Collection tests", function () {
   let owner;
   let secondAddress;
   let treasury;
